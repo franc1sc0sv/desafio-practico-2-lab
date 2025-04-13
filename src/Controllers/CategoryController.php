@@ -21,6 +21,7 @@ class CategoryController
                 200,
                 ['Content-Type' => 'application/json'],
                 json_encode($categories)
+
             );
         } catch (\Throwable $e) {
             Logger::error("Error al obtener categorías: " . $e->getMessage());

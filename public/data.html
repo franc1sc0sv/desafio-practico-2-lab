@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión de Entradas - X-Stream Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen p-6">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-4xl font-bold text-teal-400 mb-6 text-center">
+        📊 Gestión de Entradas
+      </h1>
+
+      <div class="mb-8 text-center">
+        <a href="/" class="text-teal-300 hover:underline">← Volver al inicio</a>
+      </div>
+
+      <form id="entry-form" class="bg-gray-800 p-4 rounded-lg mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <input
+            type="text"
+            name="title"
+            placeholder="Título"
+            class="p-2 rounded bg-gray-700"
+            required
+          />
+          <input
+            type="text"
+            name="description"
+            placeholder="Descripción"
+            class="p-2 rounded bg-gray-700"
+            required
+          />
+          <select
+            name="category_id"
+            class="p-2 rounded bg-gray-700 text-white"
+            required
+          >
+            <option value="">Selecciona categoría</option>
+          </select>
+        </div>
+        <button
+          class="mt-4 w-full bg-teal-500 hover:bg-teal-400 py-2 rounded font-semibold"
+          type="submit"
+        >
+          Agregar Entrada
+        </button>
+      </form>
+
+      <div id="entries" class="space-y-4"></div>
+    </div>
+
+    <!-- Modal de edición centrado -->
+    <div
+      id="edit-modal"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center"
+    >
+      <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+        <h2 class="text-xl font-bold text-teal-300 mb-4">✏️ Editar Entrada</h2>
+        <form id="edit-form" class="space-y-4">
+          <input type="hidden" name="id" />
+          <input
+            type="text"
+            name="title"
+            placeholder="Título"
+            class="w-full p-2 rounded bg-gray-700"
+            required
+          />
+          <input
+            type="text"
+            name="description"
+            placeholder="Descripción"
+            class="w-full p-2 rounded bg-gray-700"
+            required
+          />
+          <select
+            name="category_id"
+            class="w-full p-2 rounded bg-gray-700 text-white"
+            required
+          ></select>
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onclick="closeModal()"
+              class="px-4 py-2 bg-gray-600 rounded"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-teal-500 hover:bg-teal-400 rounded"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("entry-form");
+      const entriesDiv = document.getElementById("entries");
+      const categorySelect = form.category_id;
+      const editModal = document.getElementById("edit-modal");
+      const editForm = document.getElementById("edit-form");
+      const editCategory = editForm.category_id;
+
+      async function fetchEntries() {
+        const res = await fetch("/data");
+        const data = await res.json();
+
+        entriesDiv.innerHTML = data
+          .map(
+            (entry) => `
+        <div class="bg-gray-800 p-4 rounded shadow">
+          <div class="flex justify-between">
+            <div>
+              <h2 class="text-xl font-bold">${entry.title}</h2>
+              <p class="text-sm text-gray-400">${entry.description}</p>
+              <p class="text-sm text-teal-300 mt-1">Categoría: ${entry.category}</p>
+            </div>
+            <div class="space-x-2">
+              <button onclick="editEntry(${entry.id})" class="bg-yellow-500 px-3 py-1 rounded">✏️</button>
+              <button onclick="deleteEntry(${entry.id})" class="bg-red-500 px-3 py-1 rounded">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `
+          )
+          .join("");
+      }
+
+      async function fetchCategories() {
+        const res = await fetch("/categories");
+        const data = await res.json();
+        categorySelect.innerHTML += data
+          .map((cat) => `<option value="${cat.id}">${cat.name}</option>`)
+          .join("");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        await fetch("/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(data),
+        });
+
+        form.reset();
+        fetchEntries();
+      });
+
+      async function deleteEntry(id) {
+        await fetch(`/data/${id}`, { method: "DELETE" });
+        fetchEntries();
+      }
+
+      function editEntry(id) {
+        const entry = [...entriesDiv.querySelectorAll("div")].find((div) =>
+          div.querySelector("button")?.outerHTML.includes(`editEntry(${id})`)
+        );
+
+        const title = entry.querySelector("h2").textContent;
+        const description = entry.querySelector("p.text-sm").textContent;
+
+        editForm.id.value = id;
+        editForm.title.value = title;
+        editForm.description.value = description;
+
+        fetch("/categories")
+          .then((res) => res.json())
+          .then((cats) => {
+            editCategory.innerHTML = cats
+              .map((cat) => `<option value="${cat.id}">${cat.name}</option>`)
+              .join("");
+            editModal.classList.remove("hidden");
+          });
+      }
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = editForm.id.value;
+        const data = {
+          title: editForm.title.value,
+          description: editForm.description.value,
+          category_id: editForm.category_id.value,
+        };
+
+        await fetch(`/data/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(data),
+        });
+
+        closeModal();
+        fetchEntries();
+      });
+
+      function closeModal() {
+        editModal.classList.add("hidden");
+      }
+
+      fetchCategories();
+      fetchEntries();
+
+      const eventSource = new EventSource("/events");
+      eventSource.onmessage = () => fetchEntries();
+    </script>
+  </body>
+</html>
