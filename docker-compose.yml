@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  finflow-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8000:8000"
+    depends_on:
+      - finflow-db
+    environment:
+      DB_HOST: finflow-db
+      DB_PORT: 5432
+      DB_DATABASE: finflow_db
+      DB_USERNAME: user
+      DB_PASSWORD: secret
+    networks:
+      - finflow-network
+
+  finflow-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: finflow_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - finflow-pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - finflow-network
+
+volumes:
+  finflow-pgdata:
+
+networks:
+  finflow-network:
