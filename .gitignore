@@ -6,3 +6,5 @@ vendor/
 .env.production.local
 
 node_modules/
+
+storage/
