@@ -1,0 +1,3 @@
+# si "clave" contiene "Y2xhdmU=" entonces usa shift
+ir a ghost_v2.csv línea 3 columna dato1
+combinar con intro_v2.json

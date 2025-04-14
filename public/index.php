@@ -9,23 +9,29 @@ use Psr\Http\Message\ServerRequestInterface;
 use App\Router;
 use App\Services\DatabaseService;
 use Dotenv\Dotenv;
+use React\Http\Middleware\LimitConcurrentRequestsMiddleware;
+use React\Http\Middleware\RequestBodyBufferMiddleware;
+use React\Http\Middleware\RequestBodyParserMiddleware;
+use React\Http\Middleware\StreamingRequestMiddleware;
 
 $loop = Loop::get();
 
-// Cargar .env
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-// Inicializar servicio de base de datos (PDO)
 $db = new DatabaseService();
 
-$server = new HttpServer(function (ServerRequestInterface $request) {
-    return Router::handle($request);
-});
+$http = new React\Http\HttpServer(
+    new StreamingRequestMiddleware(),
+    new LimitConcurrentRequestsMiddleware(100),
+    new RequestBodyBufferMiddleware(sizeLimit: 25 * 1024 * 1024),
+    new RequestBodyParserMiddleware(100 * 1024 * 1024, 1),
+    function (ServerRequestInterface $request) {
+        return Router::handle($request);
+    }
+);
 
 $socket = new SocketServer("0.0.0.0:8000", [], $loop);
-$server->listen($socket);
+$http->listen($socket);
 
-echo "Servidor escuchando en http://localhost:8000\n";
-
-$loop->run();
+echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
