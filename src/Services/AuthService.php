@@ -72,16 +72,25 @@ class AuthService
 
     private function validateRegister(array $data): true|string
     {
-        try {
-            $validator = v::key('nombre', v::stringType()->notEmpty())
-                ->key('email', v::email())
-                ->key('password', v::stringType()->length(6, null));
+        $validator = v::key('nombre', v::stringType()->notEmpty())
+            ->key('email', v::email())
+            ->key('password', v::stringType()->length(6, null));
 
-            return $validator->validate($data) ? true : 'Datos de registro inválidos.';
-        } catch (\Throwable $e) {
-            Logger::error("Error al validar registro: " . $e->getMessage());
-            return "Error al validar registro: " . $e->getMessage();
+        if (!$validator->validate($data)) {
+            return "Datos de registro inválidos.";
         }
+
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE email = ?");
+        $stmt->execute([$data['email']]);
+        $count = $stmt->fetchColumn();
+
+        if ($count !== 0) {
+            return "El email ya está en uso";
+        }
+
+
+
+        return true;
     }
 
     private function validateLogin(array $data): true|string
