@@ -32,11 +32,18 @@ class Router
         // JWT
         $jwtSecret = $_ENV['JWT_SECRET'];
 
-        // Auth
+        // Services
         $authService = new AuthService($pdo, $jwtSecret);
+        $documentService = new DocumentService($pdo);
+
+        // Controllers
         $authController = new AuthController($authService);
+        $documentController = new DocumentController($documentService);
+        $homeController = new HomeController();
+        $eventController = new EventController();
 
-
+        // Middlewares
+        $jwtMiddleware = new MiddlewaresJwtMiddleware($authService);
 
 
         return match (true) {
@@ -45,28 +52,20 @@ class Router
             // Public routes
             $path === '/register' && $method === 'GET' => $authController->showRegister(),
             $path === '/login' && $method === 'GET' => $authController->showLogin(),
+            $path === '/documentos' && $method === 'GET' => $documentController->show(),
+            $path === '/' && $method === 'GET' => $homeController->show(),
 
             // API routes
             $path === '/api/register' && $method === 'POST' => $authController->register($request),
             $path === '/api/login' && $method === 'POST' => $authController->login($request),
 
-            // Home routes
-            $path === '/' && $method === 'GET' => (new HomeController())->show(),
+            $path === '/api/logout' && $method === 'POST' => $jwtMiddleware->handle($request, fn($req) => $authController->logout()),
+            $path === '/api/profile' && $method === 'GET' => $jwtMiddleware->handle($request, fn($req) => $authController->getProfileByUserId($req)),
+            $path === '/api/documentos' && $method === 'GET' => $jwtMiddleware->handle($request, fn($req) => $documentController->index($req)),
+            $path === '/api/documentos' && $method === 'POST' => $jwtMiddleware->handle($request, fn($req) => $documentController->create($req)),
+            preg_match('#^/api/documentos/(\d+)$#', $path, $m) && $method === 'DELETE' => $jwtMiddleware->handle($request, fn($req) => $documentController->delete($req, (int)$m[1])),
 
-
-            // Events routes
-            $path === '/api/events' && $method === 'GET' => (new EventController())->stream(),
-
-            // Public routes
-            $path === '/documentos' && $method === 'GET' => (new DocumentController(new DocumentService($pdo)))->show(),
-
-
-            // Documentos API 
-            $path === '/api/documentos' && $method === 'GET' => (new MiddlewaresJwtMiddleware($authService))->handle($request, fn($req) => (new DocumentController(new DocumentService($pdo)))->index($req)),
-            $path === '/api/documentos' && $method === 'POST' => (new MiddlewaresJwtMiddleware($authService))->handle($request, fn($req) => (new DocumentController(new DocumentService($pdo)))->create($req)),
-            preg_match('#^/api/documentos/(\d+)$#', $path, $m) && $method === 'PUT' => (new MiddlewaresJwtMiddleware($authService))->handle($request, fn($req) => (new DocumentController(new DocumentService($pdo)))->update($req, (int)$m[1])),
-            preg_match('#^/api/documentos/(\d+)$#', $path, $m) && $method === 'DELETE' => (new MiddlewaresJwtMiddleware($authService))->handle($request, fn($req) => (new DocumentController(new DocumentService($pdo)))->delete($req, (int)$m[1])),
-
+            $path === '/api/events' && $method === 'GET' => $eventController->stream(),
 
             default => new Response(
                 404,

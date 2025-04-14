@@ -58,13 +58,15 @@ class AuthService
         }
     }
 
-    public function verifyToken(string $token)
+    public function getProfileByUserId(int $userId): array
     {
         try {
-            return JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
-        } catch (\Exception $e) {
-            Logger::error("Error al verificar token: " . $e->getMessage());
-            return null;
+            $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
+            $stmt->execute([$userId]);
+            return $stmt->fetch();
+        } catch (\Throwable $e) {
+            Logger::error("Error al obtener perfil por token: " . $e->getMessage());
+            return [];
         }
     }
 

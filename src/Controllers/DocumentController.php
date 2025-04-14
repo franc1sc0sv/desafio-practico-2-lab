@@ -27,7 +27,6 @@ class DocumentController
     }
 
 
-
     public function index(ServerRequestInterface $request): Response
     {
         try {
@@ -41,20 +40,6 @@ class DocumentController
         }
     }
 
-    // public function upload(ServerRequestInterface $request): Response
-    // {
-    //     try {
-    //         $userId = $request->getAttribute('user')->sub;
-    //         $file = $request->getUploadedFiles()['archivo'] ?? null;
-
-    //         $this->documentService->uploadDocument($userId, $file);
-
-    //         return new Response(201, ['Content-Type' => 'application/json'], json_encode(['success' => 'Archivo subido']));
-    //     } catch (\Throwable $e) {
-    //         Logger::error("Error al subir documento: " . $e->getMessage());
-    //         return $this->error($e);
-    //     }
-    // }
 
     public function create(ServerRequestInterface $request): Response
     {
@@ -76,21 +61,6 @@ class DocumentController
         }
     }
 
-
-    public function update(ServerRequestInterface $request, int $id): Response
-    {
-        try {
-            $userId = $request->getAttribute('user')->sub;
-            $data = RequestParser::parse($request);
-
-            $this->documentService->updateDocument($userId, $id, $data);
-
-            return new Response(200, ['Content-Type' => 'application/json'], json_encode(['success' => 'Documento actualizado']));
-        } catch (\Throwable $e) {
-            Logger::error("Error al actualizar documento: " . $e->getMessage());
-            return $this->error($e);
-        }
-    }
 
     public function delete(ServerRequestInterface $request, int $id): Response
     {

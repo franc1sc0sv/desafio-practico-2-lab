@@ -27,7 +27,8 @@
               onclick="logout()"
               class="text-sm text-red-600 hover:text-red-700"
             >
-              <i class="fas fa-sign-out-alt mr-1"></i>Cerrar sesión
+              <i onclick="logout()" class="fas fa-sign-out-alt mr-1"></i>Cerrar
+              sesión
             </button>
           </div>
         </div>
@@ -121,6 +122,14 @@
       const documentsDiv = document.getElementById("documents");
       const deleteModal = document.getElementById("delete-modal");
       let documentToDelete = null;
+
+      async function getProfile() {
+        const res = await fetch("/api/profile", {
+          credentials: "include",
+        });
+        const data = await res.json();
+        document.getElementById("username").textContent = data.user.nombre;
+      }
 
       function updateFileName(input) {
         const fileName =
@@ -236,8 +245,17 @@
         }
       };
 
+      function logout() {
+        fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        window.location.href = "/login";
+      }
+
       checkSession();
       fetchDocuments();
+      getProfile();
     </script>
   </body>
 </html>

@@ -52,6 +52,13 @@
       const form = document.getElementById("registerForm");
       const message = document.getElementById("message");
 
+      window.addEventListener("load", async () => {
+        const res = await fetch("/api/profile", {
+          credentials: "include",
+        });
+        if (res.ok) location.href = "/documentos";
+      });
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(form));

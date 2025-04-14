@@ -74,4 +74,26 @@ class AuthController
             return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'Error interno del servidor']));
         }
     }
+
+    public function logout(): Response
+    {
+        return new Response(200, [
+            'Set-Cookie' => 'token=; HttpOnly; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT;',
+            'Content-Type' => 'application/json'
+        ], json_encode(['message' => 'Sesión cerrada']));
+    }
+
+    public function getProfileByUserId(ServerRequestInterface $request): Response
+    {
+        try {
+            $userId = $request->getAttribute('user')->sub;
+
+            $result = $this->authService->getProfileByUserId($userId);
+
+            return new Response(200, ['Content-Type' => 'application/json'], json_encode(['success' => true, 'user' => $result]));
+        } catch (\Throwable $e) {
+            Logger::error("Error al obtener perfil por token: " . $e->getMessage());
+            return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => 'Error interno del servidor']));
+        }
+    }
 }
