@@ -71,27 +71,35 @@ class AuthService
     }
 
     private function validateRegister(array $data): true|string
-    {
-        $validator = v::key('nombre', v::stringType()->notEmpty())
-            ->key('email', v::email())
-            ->key('password', v::stringType()->length(6, null));
-
-        if (!$validator->validate($data)) {
-            return "Datos de registro inválidos.";
-        }
-
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE email = ?");
-        $stmt->execute([$data['email']]);
-        $count = $stmt->fetchColumn();
-
-        if ($count !== 0) {
-            return "El email ya está en uso";
-        }
-
-
-
-        return true;
+{
+    // Validación de nombre
+    if (empty($data['nombre']) || preg_match('/^[0-9\s]*$/', $data['nombre'])) {
+        return "El nombre no debe contener solo números.";
     }
+
+    // Validación de email
+    if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        return "El email no es válido.";
+    }
+
+    // Validación de contraseña
+    if (empty($data['password']) || strlen($data['password']) < 6) {
+        return "La contraseña debe tener al menos 6 caracteres.";
+    }
+
+    // Validación de si el email ya está en uso
+    $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE email = ?");
+    $stmt->execute([$data['email']]);
+    $count = $stmt->fetchColumn();
+
+    if ($count !== 0) {
+        return "El email ya está en uso.";
+    }
+
+    return true;
+}
+
+    
 
     private function validateLogin(array $data): true|string
     {
